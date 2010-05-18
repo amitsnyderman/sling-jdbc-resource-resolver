@@ -1,0 +1,170 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>edu.nyu.cms</groupId>
+	<artifactId>custom-resources</artifactId>
+	<version>0.0.1</version>
+	<packaging>bundle</packaging>
+	<name>Custom Sling JDBC Resource Explorations</name>
+	<organization>
+		<name>New York University</name>
+	</organization>
+	
+	<properties>
+		<mavenProfile>nyu</mavenProfile>
+
+		<maven.test.skip>true</maven.test.skip>
+		<file.encoding>utf-8</file.encoding>
+
+		<org.osgi.osgi_r4_core.version>1.0</org.osgi.osgi_r4_core.version>
+		<org.osgi.osgi_r4_compendium.version>1.0</org.osgi.osgi_r4_compendium.version>
+
+		<javax.servlet.servlet-api.version>2.4</javax.servlet.servlet-api.version>
+
+		<org.apache.sling.version>2.0.3-incubator-SNAPSHOT</org.apache.sling.version>
+		<com.day.cq.version>5.1.12</com.day.cq.version>
+	</properties>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.5</source>
+					<target>1.5</target>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-scr-plugin</artifactId>
+				<version>1.0.8</version>
+				<executions>
+					<execution>
+						<id>generate-scr-scrdescriptor</id>
+						<goals>
+							<goal>scr</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+				<version>1.4.1</version>
+				<configuration>
+					<instructions>
+						<Export-Package>edu.nyu.cms.*;version=${pom.version} </Export-Package>
+						<Export-Service>edu.nyu.cms.JdbcResourceProvider</Export-Service>
+					</instructions>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.sling</groupId>
+				<artifactId>maven-sling-plugin</artifactId>
+				<version>${org.apache.sling.version}</version>
+				<executions>
+					<execution>
+						<id>install-bundle</id>
+						<goals>
+							<goal>install</goal>
+						</goals>
+						<configuration>
+							<slingUrl>http://localhost:4502/system/console/install</slingUrl>
+							<user>admin</user>
+							<password>admin</password>
+							<bundleStart>true</bundleStart>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+	
+	<dependencies>
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.4</version>
+			<scope>provided</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>osgi_R4_core</artifactId>
+			<version>${org.osgi.osgi_r4_core.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>osgi_R4_compendium</artifactId>
+			<version>${org.osgi.osgi_r4_compendium.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>${javax.servlet.servlet-api.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.sling</groupId>
+			<artifactId>org.apache.sling.api</artifactId>
+			<version>${org.apache.sling.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.sling</groupId>
+			<artifactId>org.apache.sling.commons.log</artifactId>
+			<version>${org.apache.sling.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.day.commons</groupId>
+			<artifactId>day.commons.datasource.poolservice</artifactId>
+			<version>1.0.1</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
+	
+	<repositories>
+        <repository>
+            <id>day-external-central</id>
+            <name>Day External Central Repository</name>
+            <url>http://repo.day.com/archiva/repository/day-central</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>apache-incubating-repository</id>
+            <name>Apache Incubating Repository</name>
+            <url>http://people.apache.org/repo/m2-incubating-repository</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>day-external-snapshots</id>
+            <name>Day External Snapshots Repository</name>
+            <url>http://repo.day.com/archiva/repository/day-snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>  
+    </repositories>
+</project>
