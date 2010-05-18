@@ -22,9 +22,9 @@ import com.day.commons.datasource.poolservice.*;
  * @scr.service interface="org.apache.sling.api.resource.ResourceProvider"
  * @scr.property name="service.vendor" value="New York University"
  * @scr.property name="service.description" value=""
- * @scr.property name="provider.roots" value="/content/test"
- * @scr.property name="jdbc.datasource"  value="test"
- * @scr.property name="resourceType" value="nyu/components/test"
+ * @scr.property name="provider.roots" value="" label="Content Namespace" description="E.g. /content/namespace"
+ * @scr.property name="resourceType" value="" label="Resource Type" description="E.g. app/components/type"
+ * @scr.property name="jdbc.datasource" value="" label="JDBC Data Source" description="The name of the configured JDBC data source"
  */
 
 public class JdbcResourceProvider implements ResourceProvider {
@@ -39,9 +39,6 @@ public class JdbcResourceProvider implements ResourceProvider {
 	private Connection conn;
 	
 	protected void activate(ComponentContext c) throws SQLException {
-		
-		log.info("[jdbc] Shit's starting to work...?");
-
 		providerRoot = c.getProperties().get("provider.roots").toString();
 		resourceType = c.getProperties().get("resourceType").toString();
 
@@ -67,7 +64,13 @@ public class JdbcResourceProvider implements ResourceProvider {
 		return getResource(resourceResolver, path);
 	}
 	
+	/**
+	 * Retrieve a JDBC resource, mapping a REST request with the following URL components: /path/to/root/<table>/<id>
+	 */
 	public Resource getResource(ResourceResolver resourceResolver, String path) {
+		
+		// TODO Filter requests to match above format
+		
 		if (providerRoot.equals(path) || providerRootPrefix.equals(path)) {
 			log.info("path " + path + " matches this provider root folder: " + providerRoot);
 			return new SyntheticResource(resourceResolver, path, "nt:folder");
@@ -77,9 +80,16 @@ public class JdbcResourceProvider implements ResourceProvider {
 			ResultSet rs = null;
 			Resource resource = null;
 			
+			// TODO Simplify query execution. Possibly use Spring Framework...
+			// TODO Generalize SELECT clause
+			
+			String query = "SELECT * FROM test WHERE id = " + path.substring(providerRootPrefix.length());
+			
 			try {
+				log.info(String.format("[jdbc] Executing query: %s", query));
+				
 				stmt = conn.createStatement();
-				rs = stmt.executeQuery("SELECT * FROM test WHERE id = " + path.substring(providerRootPrefix.length()));
+				rs = stmt.executeQuery(query);
 				
 				while (rs.next()) {
 					ResultSetMetaData resultMeta = rs.getMetaData();
@@ -95,9 +105,9 @@ public class JdbcResourceProvider implements ResourceProvider {
 				}
 				
 			} catch (SQLException ex) {
-				System.out.println("SQLException: " + ex.getMessage());
-				System.out.println("SQLState: " + ex.getSQLState());
-				System.out.println("VendorError: " + ex.getErrorCode());
+				log.info("SQLException: " + ex.getMessage());
+				log.info("SQLState: " + ex.getSQLState());
+				log.info("VendorError: " + ex.getErrorCode());
 			} finally {
 				if (rs != null) {
 					try {
@@ -118,6 +128,8 @@ public class JdbcResourceProvider implements ResourceProvider {
 
 		return null;
 	}
+	
+	// TODO Implement `listChildren`
 	
 	public Iterator<Resource> listChildren(Resource parent) {
 		return null;
