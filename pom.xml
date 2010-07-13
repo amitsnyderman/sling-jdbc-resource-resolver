@@ -13,7 +13,7 @@
 	<properties>
 		<mavenProfile>nyu</mavenProfile>
 
-		<maven.test.skip>true</maven.test.skip>
+		<!-- <maven.test.skip>true</maven.test.skip> -->
 		<file.encoding>utf-8</file.encoding>
 
 		<org.osgi.osgi_r4_core.version>1.0</org.osgi.osgi_r4_core.version>
@@ -129,6 +129,13 @@
 			<artifactId>day.commons.datasource.poolservice</artifactId>
 			<version>1.0.1</version>
 			<scope>provided</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>3.8.1</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	

@@ -5,9 +5,12 @@ import javax.sql.*;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.regex.*;
 import javax.servlet.http.HttpServletRequest;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentContext;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.sling.api.resource.*;
 import org.slf4j.Logger;
@@ -133,5 +136,52 @@ public class JdbcResourceProvider implements ResourceProvider {
 	
 	public Iterator<Resource> listChildren(Resource parent) {
 		return null;
+	}
+	
+	
+	public static String convertUrlToSql(String tokenPattern, String url) {
+		List<String> tokens = tokenize(tokenPattern);
+		String urlPattern = tokenPattern.replaceAll(":(\\w+)", Matcher.quoteReplacement("(\\w+)"));
+		List<String> params = extractParams(urlPattern, url);
+		return buildSql(tokens, params);
+	}
+	
+	private static String buildSql(List<String> tokens, List<String> params) {
+		String table = "";
+		List<String> paramsSql = new ArrayList<String>();
+		
+		for (int i = 0; i < tokens.size(); i++) {
+			if (tokens.get(i).equals(":table")) {
+				table = params.get(i);
+				tokens.remove(i);
+				params.remove(i);
+				i--;
+			} else {
+				paramsSql.add(String.format("%s='%s'", tokens.get(i).replace(":", ""), params.get(i))); // SQL injection opportunity!
+			}
+		}
+		
+		return String.format("SELECT * FROM %s WHERE %s", table, StringUtils.join(paramsSql, " AND "));
+	}
+	
+	private static List<String> tokenize(String pattern) {
+		List<String> tokens = new ArrayList<String>();
+		Pattern p = Pattern.compile(":(\\w+)");
+		Matcher m = p.matcher(pattern);
+		while (m.find()) {
+			tokens.add(m.group());
+		}
+		return tokens;
+	}
+	
+	private static List<String> extractParams(String pattern, String s) {
+		List<String> tokens = new ArrayList<String>();
+		Pattern p = Pattern.compile(pattern);
+		Matcher m = p.matcher(s);
+		if (!m.matches())
+			return tokens;
+		for (int i = 1; i <= m.groupCount(); i++)
+			tokens.add(m.group(i));
+		return tokens;
 	}
 }
