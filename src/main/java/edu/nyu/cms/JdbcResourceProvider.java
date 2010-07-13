@@ -26,8 +26,11 @@ import com.day.commons.datasource.poolservice.*;
  * @scr.property name="service.vendor" value="New York University"
  * @scr.property name="service.description" value=""
  * @scr.property name="provider.roots" value="" label="Content Namespace" description="E.g. /content/namespace"
+ * @scr.property name="provider.map" value=":table/:id" label="Url to SQL Mapping" description="E.g. :table/:id"
  * @scr.property name="resourceType" value="" label="Resource Type" description="E.g. app/components/type"
  * @scr.property name="jdbc.datasource" value="" label="JDBC Data Source" description="The name of the configured JDBC data source"
+ * @scr.property name="jdbc.table" value="" label="Database Table" description="Name of the queried database table."
+ * @scr.property name="jdbc.key" value="" label="Primary Key" description="Primary key used to lookup a resource. E.g. id"
  */
 
 public class JdbcResourceProvider implements ResourceProvider {
@@ -38,12 +41,18 @@ public class JdbcResourceProvider implements ResourceProvider {
 	
 	private String providerRoot;
 	private String providerRootPrefix;
+	private String providerMap;
 	private String resourceType;
+	private String databaseTable;
+	private String databaseKey;
 	private Connection conn;
 	
 	protected void activate(ComponentContext c) throws SQLException {
 		providerRoot = c.getProperties().get("provider.roots").toString();
+		providerMap = c.getProperties().get("provider.map").toString();
 		resourceType = c.getProperties().get("resourceType").toString();
+		databaseTable = c.getProperties().get("jdbc.table").toString();
+		databaseKey = c.getProperties().get("jdbc.key").toString();
 
 		this.providerRootPrefix = providerRoot.concat("/");
 		
@@ -72,27 +81,33 @@ public class JdbcResourceProvider implements ResourceProvider {
 	 */
 	public Resource getResource(ResourceResolver resourceResolver, String path) {
 		
-		// TODO Filter requests to match above format
+		// TODO Filter requests to match only desired format
 		
 		if (providerRoot.equals(path) || providerRootPrefix.equals(path)) {
-			log.info("path " + path + " matches this provider root folder: " + providerRoot);
+			log.info("[jdbc] Folder! Path " + path + " matches this provider root folder: " + providerRoot);
 			return new SyntheticResource(resourceResolver, path, "nt:folder");
-		} else if (path.startsWith(providerRootPrefix) && NumberUtils.isNumber(path.substring(providerRootPrefix.length()))) {
+		// } else if (path.startsWith(providerRootPrefix) && NumberUtils.isNumber(path.substring(providerRootPrefix.length()))) {
+		} else if (path.startsWith(providerRootPrefix)) {
+			log.info("[jdbc] Resource! " + path);
 			
-			Statement stmt = null;
+			PreparedStatement stmt = null;
 			ResultSet rs = null;
 			Resource resource = null;
 			
 			// TODO Simplify query execution. Possibly use Spring Framework...
 			// TODO Generalize SELECT clause
 			
-			String query = "SELECT * FROM test WHERE id = " + path.substring(providerRootPrefix.length());
+			// String query = String.format("SELECT * FROM %s WHERE %s = ?", databaseTable, databaseKey);
+			// String param = path.substring(providerRootPrefix.length());
+			
+			String query = convertUrlToSql(providerMap, path.substring(providerRootPrefix.length()));
 			
 			try {
 				log.info(String.format("[jdbc] Executing query: %s", query));
 				
-				stmt = conn.createStatement();
-				rs = stmt.executeQuery(query);
+				stmt = conn.prepareStatement(query);
+				// stmt.setObject(1, param);
+				rs = stmt.executeQuery();
 				
 				while (rs.next()) {
 					ResultSetMetaData resultMeta = rs.getMetaData();
@@ -141,14 +156,19 @@ public class JdbcResourceProvider implements ResourceProvider {
 	
 	public static String convertUrlToSql(String tokenPattern, String url) {
 		List<String> tokens = tokenize(tokenPattern);
+		log.info(String.format("[jdbc] Tokens: %s", tokens.toString()));
 		String urlPattern = tokenPattern.replaceAll(":(\\w+)", Matcher.quoteReplacement("(\\w+)"));
 		List<String> params = extractParams(urlPattern, url);
+		log.info(String.format("[jdbc] Params: %s", params.toString()));
 		return buildSql(tokens, params);
 	}
 	
 	private static String buildSql(List<String> tokens, List<String> params) {
 		String table = "";
 		List<String> paramsSql = new ArrayList<String>();
+		
+		if (tokens.size() != params.size())
+			return String.format("SELECT * FROM %s", table);
 		
 		for (int i = 0; i < tokens.size(); i++) {
 			if (tokens.get(i).equals(":table")) {
